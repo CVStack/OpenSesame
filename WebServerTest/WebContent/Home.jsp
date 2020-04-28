@@ -19,7 +19,7 @@ request.setCharacterEncoding("UTF-8");
 	JSONObject result_object = new JSONObject();
 	
 	
-	//Http request state log
+	//Http request state log을 남김
 	try {
       	
 		//File file = new File("requestLog.txt");
