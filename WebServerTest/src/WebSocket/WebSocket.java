@@ -17,7 +17,7 @@ public class WebSocket {
 	
 	@OnOpen
 	public void handleOpen(Session session){
-		// 클라이언트가 접속시 요청되는 함수
+		// 클라이언트가 접속시 요청되는 function
 		System.out.println("Client is connected");
 	}
 	
