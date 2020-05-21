@@ -2,15 +2,14 @@
 #include <WiFi.h>
 #include <ArduinoJson.h>
 
-const char* ssid     = "deleste";
-const char* password = "20160103";
-//char path[] = "/WebServerTest2/WebSocket/WebSocket";
-//char host[] = "34.228.216.228";
+const char* ssid     = "Raon03";
+const char* password = "00005430";
 
 char path[] = "/WebServerTest/WebSocket/WebSocket";
-char host[] = "192.168.0.60";
+char host[] = "192.168.100.19";
   
 WebSocketClient webSocketClient;
+StaticJsonBuffer<200> jsonBuffer;
 
 // Use WiFiClient class to create TCP connections
 WiFiClient client;
@@ -59,7 +58,6 @@ void setup() {
 
   delay(5000);
   
-
   // Connect to the websocket server
   if (client.connect(host, 8080)) {
     Serial.println("Connected");
@@ -76,6 +74,16 @@ void setup() {
   
   if (webSocketClient.handshake(client)) {
     Serial.println("Handshake successful");
+    String data;
+    jsonBuffer.clear();
+    JsonObject& root = jsonBuffer.createObject();
+
+    root["type"] = "Arduino";
+    root["MAC"] = "C8:2B:96:8E:EE:2C"; //WiFi.macAddress();
+    
+    root.printTo(data);
+    webSocketClient.sendData(data); // 처음 연결할때 자신의 MAC주소 보냄
+    
   } else {
     Serial.println("Handshake failed.");
     while(1) {
@@ -92,31 +100,47 @@ double sensor3 = -1;
 void loop() {
   String data; //buffer
   //json format으로 send / recv
-  StaticJsonBuffer<200> jsonBuffer;
-  JsonObject& root = jsonBuffer.createObject();
   
   if (client.connected()) {
     
     webSocketClient.getData(data); //recv data
-    
-    if (data.length() > 0) {
-      Serial.print("Received data: ");
-      Serial.println(data);
-    }
+    int wait_count = 0;
+    while(true) {
+      
+      if (data.length() > 0) { //데이터를 수신했을 떄
+        Serial.print("Received data: ");
+        Serial.println(data);
+        break;
+      }
 
-    //motor control request or send data request시 처리
+      else if(wait_count >= 30){ //30초가 지났을때
+        break;  
+      }
+      
+      else {
+        delay(1000); // 1초대기
+        wait_count += 1;  
+      }  
+    }
 
     data = "";
     char c;
+    jsonBuffer.clear();
+    JsonObject& root = jsonBuffer.createObject();
     
-    //일정 주기로 데이터 보내기
-
+    //일정 주기로 데이터 보냄
+    
      sensor1 += 1.2;
      sensor2 += 1.3;
      sensor3 += 1.4;
-     root["sensor1"] = sensor1;
-     root["sensor2"] = sensor2;
-     root["sensor3"] = sensor3;   
+     root["type"] = "Arduino";
+     root["MAC"] = "C8:2B:96:8E:EE:2C"; //WiFi.macAddress();
+     JsonObject& sensors = jsonBuffer.createObject();
+     sensors["sensor1"] = sensor1;
+     sensors["sensor2"] = sensor2;
+     sensors["sensor3"] = sensor3;
+     root["sensors"] = sensors;
+        
      root.printTo(data);
      Serial.println(data);  
      webSocketClient.sendData(data);
@@ -131,6 +155,5 @@ void loop() {
   }
   
   // wait to fully let the client disconnect
-  delay(3000);
   
 }
