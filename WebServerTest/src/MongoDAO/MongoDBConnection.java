@@ -1,47 +1,37 @@
-package Util;
-
-import javax.print.Doc;
+package MongoDAO;
 
 import org.bson.Document;
 import org.json.simple.JSONObject;
 
 import com.mongodb.DBObject;
+import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
+
 public class MongoDBConnection {
 
 	private static MongoDBConnection conn = new MongoDBConnection();
 	private MongoClient mc;
     private MongoDatabase db;
     private MongoCollection<Document> collection;
-    private boolean connected; //단 한번만 connect하고 계속 사용
     
 	private MongoDBConnection() {
-		connected = false;
+		mc = MongoClients.create(); // connect to mongodb instance
+		db = mc.getDatabase("openSeasame"); //connect to database
 	}
 	
 	public static MongoDBConnection getInstance() {
-		
 		return conn;
 	}
 	
-	private void connection() {
-		
-		mc = MongoClients.create(); // connect to mongodb instance
-    	db = mc.getDatabase("sensorDB"); // access database
-    	connected = true;
-	}
-	
-	public void insertDocument(String json) {
-		
+	public void insertDocument(String collection_Name, String json) {
+			
 		try {
-			if(!connected)
-				connection();
-			collection = db.getCollection("sensorData");
+			collection = db.getCollection(collection_Name);
 			Document doc = Document.parse(json);
 			collection.insertOne(doc);
 		}
@@ -50,17 +40,12 @@ public class MongoDBConnection {
 		}
 	}
 	
-	public Document findDocument_request(String MacAddress_esp32) {
-		
+	public Document getDocument_MAC_pair(String mac) {
+		//해당 mac의 pair를 가져옴
 		Document result = null;
 		try {
-			if(!connected)
-				connection();
-			collection = db.getCollection("request");
-			collection.find(Filters.eq("MacAddress_ESP32", MacAddress_esp32))
-					.projection(Projections.elemMatch("request")).first();
-			
-			//Mac address가 같은 document의 request만 return
+			collection = db.getCollection("MAC_MappingCollection");
+			result = collection.find(Filters.or(Filters.eq("MAC_ad",mac),Filters.eq("MAC_ar",mac))).first();
 		}
 		catch(Exception e) {
 			e.printStackTrace();
@@ -68,6 +53,21 @@ public class MongoDBConnection {
 		
 		return result;
 	}
+	
+	public FindIterable<Document> getDocument_sensors(String mac) {
+		//해당 사용자의 센서값들을 리턴
+		FindIterable<Document> result = null;
+		try {
+			collection = db.getCollection("SensorCollection");
+			result = collection.find(Filters.eq("MAC")).projection(Projections.fields(Projections.exclude("_id", "MAC_ad")));
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+		}
+		
+		return result;
+	}
+	
 	public boolean closeConnection() {
 		
 		boolean result = false;
