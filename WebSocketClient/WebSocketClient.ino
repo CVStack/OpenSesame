@@ -2,11 +2,11 @@
 #include <WiFi.h>
 #include <ArduinoJson.h>
 
-const char* ssid     = "Raon03";
-const char* password = "00005430";
+const char* ssid     = "";
+const char* password = "";
 
 char path[] = "/WebServerTest/WebSocket/WebSocket";
-char host[] = "192.168.100.19";
+char host[] = "";
   
 WebSocketClient webSocketClient;
 StaticJsonBuffer<200> jsonBuffer;
